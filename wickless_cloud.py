@@ -16,17 +16,15 @@ SYMBOLS = {                   # name -> Yahoo Finance ticker
     "USDCHF": "USDCHF=X",
     "AUDCHF": "AUDCHF=X",
 }
-
-TIMEFRAMES = ["15m", "30m", "1h"]
-         # any of: 5m, 15m, 30m, 1h, 4h
+TIMEFRAMES = ["15m", "30m", "1h"]   # any of: 5m, 15m, 30m, 1h, 4h
 # "open_side": bull candle has no lower wick (open = low), bear candle has no upper wick (open = high)
 # "both":      no wick on either side
 WICKLESS_MODE = "open_side"
 LOOKBACK = 2                  # check the last N closed candles (covers delayed runs)
 # ------------------------------
 
-TOKEN = os.environ["TELEGRAM_TOKEN"]
-CHAT_ID = os.environ["TELEGRAM_CHAT_ID"]
+TOKEN = os.environ["TELEGRAM_TOKEN"].strip()
+CHAT_ID = os.environ["TELEGRAM_CHAT_ID"].strip()
 TOL = float(os.environ.get("TOL", "0"))   # price tolerance; 0 = exact match
 STATE = Path("state.json")
 
@@ -79,6 +77,10 @@ def classify(o, h, l, c):
 
 
 def main():
+    # On a manual run, send a connection test first (a failure shows as a red error in the log)
+    if os.environ.get("GITHUB_EVENT_NAME") == "workflow_dispatch":
+        send("Test: bot is connected. Manual run started.")
+
     state = json.loads(STATE.read_text()) if STATE.exists() else {}
     for name, ticker in SYMBOLS.items():
         for tf in TIMEFRAMES:
@@ -86,6 +88,7 @@ def main():
             try:
                 df = get_candles(ticker, tf).tail(LOOKBACK)
                 done = state.get(key, "")
+                sent = 0
                 for t, row in df.iterrows():
                     stamp = t.isoformat()
                     if done and stamp <= done:
@@ -97,9 +100,12 @@ def main():
                              f"L {row['Low']:.5g}  C {row['Close']:.5g}\n"
                              f"Candle {t:%Y-%m-%d %H:%M} UTC")
                         done = stamp
+                        sent += 1
                 state[key] = done
+                last = df.index[-1].isoformat() if len(df) else "none"
+                print(f"{key}: {len(df)} candles checked, last {last}, alerts sent {sent}")
             except Exception as e:
-                print(f"{key}: {e}")
+                print(f"{key}: ERROR {e}")
     STATE.write_text(json.dumps(state, indent=2))
 
 
