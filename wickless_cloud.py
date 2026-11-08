@@ -9,11 +9,16 @@ import yfinance as yf
 
 # ---------- settings ----------
 SYMBOLS = {                   # name -> Yahoo Finance ticker
+    "AUDUSD": "AUDUSD=X",
     "AUDJPY": "AUDJPY=X",
-    # "EURUSD": "EURUSD=X",
-    # "GBPUSD": "GBPUSD=X",
+    "GBPUSD": "GBPUSD=X",
+    "USDJPY": "USDJPY=X",
+    "USDCHF": "USDCHF=X",
+    "AUDCHF": "AUDCHF=X",
 }
-TIMEFRAMES = ["15m"]          # any of: 5m, 15m, 30m, 1h, 4h
+
+TIMEFRAMES = ["15m", "30m", "1h"]
+         # any of: 5m, 15m, 30m, 1h, 4h
 # "open_side": bull candle has no lower wick (open = low), bear candle has no upper wick (open = high)
 # "both":      no wick on either side
 WICKLESS_MODE = "open_side"
